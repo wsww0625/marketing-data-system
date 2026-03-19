@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("user")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  importBatches    ImportBatch[]
+  screeningBatches ScreeningBatch[]
+  exportBatches    ExportBatch[]
+  sendImportBatches SendImportBatch[]
+  copywritings     Copywriting[]
+  crossDedupBatches CrossDedupBatch[]
+  dataMatchTasks   DataMatchTask[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Space {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  isPrimary   Boolean  @default(false) @map("is_primary")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  channels         Channel[]
+  phoneNumbers     PhoneNumber[]
+  duplicateNumbers DuplicateNumber[]
+  importBatches    ImportBatch[]
+  screeningBatches ScreeningBatch[]
+  exportBatches    ExportBatch[]
+  sendRecords      SendRecord[]
+  statsSnapshots   StatsSnapshot[]
+
+  @@map("spaces")
+}
+
+model Channel {
+  id          Int      @id @default(autoincrement())
+  spaceId     Int      @map("space_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  space        Space         @relation(fields: [spaceId], references: [id])
+  phoneNumbers PhoneNumber[]
+  duplicateNumbers DuplicateNumber[]
+
+  @@map("channels")
+}
+
+model PhoneNumber {
+  id            Int       @id @default(autoincrement())
+  phone         String
+  spaceId       Int       @map("space_id")
+  channelId     Int?      @map("channel_id")
+  activityDays  Float?    @map("activity_days")
+  isValid       Boolean   @default(true) @map("is_valid")
+  isCooled      Boolean   @default(false) @map("is_cooled")
+  cooledAt      DateTime? @map("cooled_at")
+  coolBatchId   Int?      @map("cool_batch_id")
+  sendCount     Int       @default(0) @map("send_count")
+  lastSentAt    DateTime? @map("last_sent_at")
+  screenedAt    DateTime? @map("screened_at")
+  importBatchId Int       @map("import_batch_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  space       Space        @relation(fields: [spaceId], references: [id])
+  channel     Channel?     @relation(fields: [channelId], references: [id])
+  importBatch ImportBatch  @relation(fields: [importBatchId], references: [id])
+  sendRecords SendRecord[]
+
+  @@unique([phone, spaceId])
+  @@index([spaceId, activityDays])
+  @@index([spaceId, isCooled])
+  @@index([spaceId, sendCount])
+  @@index([phone])
+  @@map("phone_numbers")
+}
+
+model DuplicateNumber {
+  id              Int      @id @default(autoincrement())
+  phone           String
+  spaceId         Int      @map("space_id")
+  channelId       Int?     @map("channel_id")
+  importBatchId   Int      @map("import_batch_id")
+  originalPhoneId Int?     @map("original_phone_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  space       Space       @relation(fields: [spaceId], references: [id])
+  channel     Channel?    @relation(fields: [channelId], references: [id])
+  importBatch ImportBatch @relation(fields: [importBatchId], references: [id])
+
+  @@index([spaceId])
+  @@index([phone])
+  @@map("duplicate_numbers")
+}
+
+model ImportBatch {
+  id             Int       @id @default(autoincrement())
+  fileName       String    @map("file_name")
+  spaceId        Int       @map("space_id")
+  channelId      Int?      @map("channel_id")
+  dataType       String    @default("merchant") @map("data_type")
+  total          Int       @default(0)
+  newCount       Int       @default(0) @map("new_count")
+  updatedCount   Int       @default(0) @map("updated_count")
+  duplicateCount Int       @default(0) @map("duplicate_count")
+  status         String    @default("processing")
+  revertedAt     DateTime? @map("reverted_at")
+  userId         Int       @map("user_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  space            Space             @relation(fields: [spaceId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  phoneNumbers     PhoneNumber[]
+  duplicateNumbers DuplicateNumber[]
+
+  @@index([spaceId])
+  @@map("import_batches")
+}
+
+model ScreeningBatch {
+  id           Int       @id @default(autoincrement())
+  fileName     String    @map("file_name")
+  spaceId      Int       @map("space_id")
+  total        Int       @default(0)
+  updatedCount Int       @default(0) @map("updated_count")
+  status       String    @default("processing")
+  revertedAt   DateTime? @map("reverted_at")
+  userId       Int       @map("user_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  space Space @relation(fields: [spaceId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([spaceId])
+  @@map("screening_batches")
+}
+
+model ExportBatch {
+  id            Int       @id @default(autoincrement())
+  spaceId       Int       @map("space_id")
+  filtersJson   String    @map("filters_json")
+  total         Int       @default(0)
+  status        String    @default("processing")
+  progress      Int       @default(0)
+  filePath      String?   @map("file_path")
+  isCoolExport  Boolean   @default(true) @map("is_cool_export")
+  coolReverted  Boolean   @default(false) @map("cool_reverted")
+  userId        Int       @map("user_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  space Space @relation(fields: [spaceId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([spaceId])
+  @@map("export_batches")
+}
+
+model SendRecord {
+  id            Int      @id @default(autoincrement())
+  phoneNumberId Int?     @map("phone_number_id")
+  phone         String
+  spaceId       Int?     @map("space_id")
+  sentAt        DateTime @map("sent_at")
+  batchId       Int      @map("batch_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  phoneNumber PhoneNumber?    @relation(fields: [phoneNumberId], references: [id])
+  space       Space?          @relation(fields: [spaceId], references: [id])
+  batch       SendImportBatch @relation(fields: [batchId], references: [id])
+
+  @@index([phone])
+  @@index([spaceId])
+  @@map("send_records")
+}
+
+model SendImportBatch {
+  id           Int      @id @default(autoincrement())
+  fileName     String   @map("file_name")
+  validCount   Int      @default(0) @map("valid_count")
+  invalidCount Int      @default(0) @map("invalid_count")
+  userId       Int      @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id])
+  sendRecords SendRecord[]
+
+  @@map("send_import_batches")
+}
+
+model Copywriting {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  category  String?
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("copywritings")
+}
+
+model CrossDedupBatch {
+  id             Int      @id @default(autoincrement())
+  primarySpaceId Int      @map("primary_space_id")
+  duplicateCount Int      @default(0) @map("duplicate_count")
+  status         String   @default("scanning")
+  userId         Int      @map("user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user    User              @relation(fields: [userId], references: [id])
+  records CrossDedupRecord[]
+
+  @@map("cross_dedup_batches")
+}
+
+model CrossDedupRecord {
+  id             Int    @id @default(autoincrement())
+  batchId        Int    @map("batch_id")
+  phone          String
+  primarySpaceId Int    @map("primary_space_id")
+  sourceSpaceId  Int    @map("source_space_id")
+  status         String @default("pending")
+
+  batch CrossDedupBatch @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+  @@map("cross_dedup_records")
+}
+
+model DataMatchTask {
+  id            Int      @id @default(autoincrement())
+  fileName      String   @map("file_name")
+  targetSpaceId Int?     @map("target_space_id")
+  total         Int      @default(0)
+  uniqueMatch   Int      @default(0) @map("unique_match")
+  dupMatch      Int      @default(0) @map("dup_match")
+  matchRate     Float    @default(0) @map("match_rate")
+  status        String   @default("processing")
+  userId        Int      @map("user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("data_match_tasks")
+}
+
+model StatsSnapshot {
+  id           Int      @id @default(autoincrement())
+  snapshotType String   @map("snapshot_type")
+  spaceId      Int?     @map("space_id")
+  dataJson     String   @map("data_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  space Space? @relation(fields: [spaceId], references: [id])
+
+  @@unique([snapshotType, spaceId])
+  @@map("stats_snapshots")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  action    String
+  detail    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,13 @@
+{
+  "name": "marketing-data-system",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
+    "build": "pnpm --filter server build && pnpm --filter client build",
+    "db:migrate": "pnpm --filter server db:migrate",
+    "db:seed": "pnpm --filter server db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

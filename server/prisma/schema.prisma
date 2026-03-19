@@ -19,6 +19,7 @@ model User {
   exportBatches    ExportBatch[]
   sendImportBatches SendImportBatch[]
   copywritings     Copywriting[]
+  operationReports OperationReport[]
   crossDedupBatches CrossDedupBatch[]
   dataMatchTasks   DataMatchTask[]
   auditLogs        AuditLog[]
@@ -41,6 +42,7 @@ model Space {
   exportBatches    ExportBatch[]
   sendRecords      SendRecord[]
   statsSnapshots   StatsSnapshot[]
+  operationReports OperationReport[]
 
   @@map("spaces")
 }
@@ -55,6 +57,7 @@ model Channel {
   space        Space         @relation(fields: [spaceId], references: [id])
   phoneNumbers PhoneNumber[]
   duplicateNumbers DuplicateNumber[]
+  operationReports OperationReport[]
 
   @@map("channels")
 }
@@ -202,16 +205,56 @@ model SendImportBatch {
 
 model Copywriting {
   id        Int      @id @default(autoincrement())
-  title     String
+  code      String   @unique
   content   String
-  category  String?
+  imageUrl  String?  @map("image_url")
   userId    Int      @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  operationReports OperationReport[]
 
   @@map("copywritings")
+}
+
+model OperationReport {
+  id               Int      @id @default(autoincrement())
+  taskDate         DateTime @map("task_date")
+  packageName      String   @map("package_name")
+  dataSourceSpaceId Int?    @map("data_source_space_id")
+  channelId        Int?     @map("channel_id")
+  startSendDate    DateTime @map("start_send_date")
+  sendPlatform     String   @map("send_platform")
+  sendChannel      String   @map("send_channel")
+  sendCount        Int      @default(0) @map("send_count")
+  copywritingId    Int?     @map("copywriting_id")
+  clickCount       Int      @default(0) @map("click_count")
+  clickRate        Float    @default(0) @map("click_rate")
+  readRate         Float    @default(0) @map("read_rate")
+  registerCount    Int      @default(0) @map("register_count")
+  rechargeCount    Int      @default(0) @map("recharge_count")
+  rechargeAmount   Float    @default(0) @map("recharge_amount")
+  withdrawCount    Int      @default(0) @map("withdraw_count")
+  withdrawAmount   Float    @default(0) @map("withdraw_amount")
+  rechargeDiff     Float    @default(0) @map("recharge_diff")
+  userValue        Float    @default(0) @map("user_value")
+  payCost          Float    @default(0) @map("pay_cost")
+  rechargeROI      Float    @default(0) @map("recharge_roi")
+  balanceROI       Float    @default(0) @map("balance_roi")
+  userId           Int      @map("user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  dataSourceSpace Space?       @relation(fields: [dataSourceSpaceId], references: [id])
+  channel         Channel?     @relation(fields: [channelId], references: [id])
+  copywriting     Copywriting? @relation(fields: [copywritingId], references: [id])
+  user            User         @relation(fields: [userId], references: [id])
+
+  @@index([taskDate])
+  @@index([dataSourceSpaceId])
+  @@index([channelId])
+  @@map("operation_reports")
 }
 
 model CrossDedupBatch {

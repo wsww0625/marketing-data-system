@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { protectedProcedure, adminProcedure, router } from '../trpc.js';
+import { protectedProcedure, router } from '../trpc.js';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,6 @@ export const copywritingRouter = router({
   list: protectedProcedure
     .input(z.object({
       search: z.string().optional(),
-      category: z.string().optional(),
       page: z.number().default(1),
       pageSize: z.number().default(20),
     }))
@@ -16,11 +15,10 @@ export const copywritingRouter = router({
       const where: any = {};
       if (input.search) {
         where.OR = [
-          { title: { contains: input.search } },
+          { code: { contains: input.search } },
           { content: { contains: input.search } },
         ];
       }
-      if (input.category) where.category = input.category;
 
       const [items, total] = await Promise.all([
         prisma.copywriting.findMany({
@@ -35,28 +33,49 @@ export const copywritingRouter = router({
       return { items, total, page: input.page, pageSize: input.pageSize };
     }),
 
+  // Get all copywriting codes for dropdown
+  codes: protectedProcedure.query(async () => {
+    const items = await prisma.copywriting.findMany({
+      select: { id: true, code: true },
+      orderBy: { code: 'asc' },
+    });
+    return items;
+  }),
+
   create: protectedProcedure
     .input(z.object({
-      title: z.string().min(1),
+      code: z.string().min(1),
       content: z.string().min(1),
-      category: z.string().optional(),
+      imageUrl: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       return prisma.copywriting.create({
-        data: { ...input, userId: ctx.user!.userId },
+        data: {
+          code: input.code,
+          content: input.content,
+          imageUrl: input.imageUrl || null,
+          userId: ctx.user!.userId,
+        },
       });
     }),
 
   update: protectedProcedure
     .input(z.object({
       id: z.number(),
-      title: z.string().min(1),
+      code: z.string().min(1),
       content: z.string().min(1),
-      category: z.string().optional(),
+      imageUrl: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      return prisma.copywriting.update({ where: { id }, data });
+      return prisma.copywriting.update({
+        where: { id },
+        data: {
+          code: data.code,
+          content: data.content,
+          imageUrl: data.imageUrl || null,
+        },
+      });
     }),
 
   delete: protectedProcedure
@@ -65,13 +84,4 @@ export const copywritingRouter = router({
       await prisma.copywriting.delete({ where: { id: input.id } });
       return { success: true };
     }),
-
-  categories: protectedProcedure.query(async () => {
-    const cats = await prisma.copywriting.findMany({
-      select: { category: true },
-      distinct: ['category'],
-      where: { category: { not: null } },
-    });
-    return cats.map(c => c.category).filter(Boolean);
-  }),
 });

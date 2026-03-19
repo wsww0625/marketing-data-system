@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { trpc, uploadFile } from '../trpc';
 import DataTable from '../components/DataTable';
 
@@ -6,6 +6,8 @@ export default function Screening() {
   const [spaceId, setSpaceId] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
   const [page, setPage] = useState(1);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const spaces = trpc.spaces.list.useQuery();
   const history = trpc.screening.history.useQuery({ spaceId: spaceId || undefined, page });
@@ -17,9 +19,8 @@ export default function Screening() {
     onSuccess: () => history.refetch(),
   });
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !spaceId) return;
+  const processFile = async (file: File) => {
+    if (!spaceId) { alert('请先选择空间库'); return; }
     setUploading(true);
     try {
       const { filePath, fileName } = await uploadFile(file);
@@ -28,34 +29,70 @@ export default function Screening() {
       alert(err.message);
       setUploading(false);
     }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await processFile(file);
     e.target.value = '';
   };
 
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
+  };
+
+  const isReady = !!spaceId && !uploading;
+
   return (
     <div>
-      <h2 className="text-xl font-bold mb-6">活跃筛选</h2>
+      <h2 className="page-header">活跃筛选</h2>
 
-      <div className="bg-white rounded-lg border p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">空间库</label>
+      <div className="card mb-6">
+        <div className="card-body">
+          <div className="max-w-xs mb-5">
+            <label className="form-label">空间库</label>
             <select value={spaceId} onChange={e => setSpaceId(Number(e.target.value))}
-              className="w-full border rounded px-3 py-2 text-sm">
-              <option value={0}>请选择</option>
+              className="form-select">
+              <option value={0}>请选择空间库</option>
               {spaces.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">筛选结果文件（号码,活跃天数）</label>
-            <input type="file" accept=".csv,.txt" onChange={handleUpload} disabled={!spaceId || uploading}
-              className="w-full text-sm" />
+
+          {/* Upload zone */}
+          <div
+            className={`upload-zone ${dragActive ? 'active' : ''} ${!isReady ? 'disabled' : ''}`}
+            onDragOver={e => { e.preventDefault(); if (isReady) setDragActive(true); }}
+            onDragLeave={() => setDragActive(false)}
+            onDrop={isReady ? handleDrop : undefined}
+            onClick={() => isReady && fileInputRef.current?.click()}
+          >
+            <input ref={fileInputRef} type="file" accept=".csv,.txt" onChange={handleUpload} className="hidden" disabled={!isReady} />
+            {uploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-blue-600 font-medium">筛选处理中...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-1">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-gray-700">点击或拖拽筛选结果文件到此处</p>
+                <p className="text-xs text-gray-400">文件格式：号码,活跃天数（支持 .csv, .txt）</p>
+                {!spaceId && <p className="text-xs text-amber-500 mt-1">请先选择空间库</p>}
+              </div>
+            )}
           </div>
         </div>
-        {uploading && <div className="text-sm text-blue-600 mt-2">筛选处理中...</div>}
       </div>
 
-      <div className="bg-white rounded-lg border">
-        <div className="p-4 border-b"><h3 className="font-semibold">筛选历史</h3></div>
+      <div className="card">
+        <div className="card-header">筛选历史</div>
         <DataTable
           columns={[
             { key: 'fileName', title: '文件名' },
@@ -63,14 +100,14 @@ export default function Screening() {
             { key: 'total', title: '总数' },
             { key: 'updatedCount', title: '更新数' },
             { key: 'status', title: '状态', render: (r: any) => (
-              <span className={r.status === 'reverted' ? 'text-red-500' : 'text-green-600'}>
+              <span className={r.status === 'reverted' ? 'badge-error' : 'badge-success'}>
                 {r.status === 'completed' ? '已完成' : r.status === 'reverted' ? '已回退' : '处理中'}
               </span>
             )},
             { key: 'createdAt', title: '时间', render: (r: any) => new Date(r.createdAt).toLocaleString('zh-CN') },
             { key: 'actions', title: '操作', render: (r: any) => r.status === 'completed' && (
               <button onClick={() => { if (confirm('确认回退？')) revertMutation.mutate({ batchId: r.id }); }}
-                className="text-red-600 text-sm hover:underline">回退</button>
+                className="text-red-600 text-sm hover:text-red-700 font-medium">回退</button>
             )},
           ]}
           data={history.data?.items || []}

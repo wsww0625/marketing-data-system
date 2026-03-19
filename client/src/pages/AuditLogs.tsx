@@ -10,19 +10,19 @@ export default function AuditLogs() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-6">审计日志</h2>
+      <h2 className="page-header">审计日志</h2>
 
       <div className="mb-4">
         <input type="text" value={action} onChange={e => { setAction(e.target.value); setPage(1); }}
-          placeholder="按操作类型搜索" className="border rounded px-3 py-2 text-sm w-64" />
+          placeholder="按操作类型搜索" className="form-input w-64" />
       </div>
 
-      <div className="bg-white rounded-lg border">
+      <div className="card">
         <DataTable
           columns={[
             { key: 'id', title: 'ID' },
             { key: 'user', title: '操作人', render: (r: any) => r.user?.username },
-            { key: 'action', title: '操作类型' },
+            { key: 'action', title: '操作类型', render: (r: any) => <span className="badge-default">{r.action}</span> },
             { key: 'detail', title: '详情' },
             { key: 'createdAt', title: '时间', render: (r: any) => new Date(r.createdAt).toLocaleString('zh-CN') },
           ]}

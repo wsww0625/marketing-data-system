@@ -5,20 +5,25 @@ interface StatsCardProps {
   color?: string;
 }
 
+const colorMap: Record<string, { bg: string; border: string; text: string; accent: string }> = {
+  blue:   { bg: 'bg-white', border: 'border-blue-100', text: 'text-blue-600', accent: 'bg-blue-500' },
+  green:  { bg: 'bg-white', border: 'border-green-100', text: 'text-green-600', accent: 'bg-green-500' },
+  orange: { bg: 'bg-white', border: 'border-orange-100', text: 'text-orange-600', accent: 'bg-orange-500' },
+  red:    { bg: 'bg-white', border: 'border-red-100', text: 'text-red-600', accent: 'bg-red-500' },
+  purple: { bg: 'bg-white', border: 'border-purple-100', text: 'text-purple-600', accent: 'bg-purple-500' },
+};
+
 export default function StatsCard({ title, value, subtitle, color = 'blue' }: StatsCardProps) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    green: 'bg-green-50 border-green-200 text-green-700',
-    orange: 'bg-orange-50 border-orange-200 text-orange-700',
-    red: 'bg-red-50 border-red-200 text-red-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
-  };
+  const c = colorMap[color] || colorMap.blue;
 
   return (
-    <div className={`rounded-lg border p-4 ${colors[color] || colors.blue}`}>
-      <div className="text-sm opacity-75">{title}</div>
-      <div className="text-2xl font-bold mt-1">{typeof value === 'number' ? value.toLocaleString() : value}</div>
-      {subtitle && <div className="text-xs mt-1 opacity-60">{subtitle}</div>}
+    <div className={`${c.bg} rounded-xl border ${c.border} p-5 relative overflow-hidden`}>
+      <div className={`absolute top-0 left-0 w-1 h-full ${c.accent}`} />
+      <div className="text-sm text-gray-500 mb-1">{title}</div>
+      <div className={`text-2xl font-semibold ${c.text}`}>
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </div>
+      {subtitle && <div className="text-xs text-gray-400 mt-1.5">{subtitle}</div>}
     </div>
   );
 }

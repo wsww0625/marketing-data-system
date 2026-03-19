@@ -80,6 +80,9 @@ app.get('/api/download/:fileName', (req, res) => {
   res.download(filePath);
 });
 
+// Serve uploaded images
+app.use('/api/uploads', express.static(uploadsDir));
+
 // tRPC
 app.use('/trpc', createExpressMiddleware({
   router: appRouter,

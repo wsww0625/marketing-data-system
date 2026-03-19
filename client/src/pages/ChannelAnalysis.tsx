@@ -13,10 +13,10 @@ export default function ChannelAnalysis() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">渠道分析</h2>
+        <h2 className="page-header mb-0">渠道分析</h2>
         <div className="flex gap-2 items-center">
           <select value={spaceId || ''} onChange={e => setSpaceId(e.target.value ? Number(e.target.value) : undefined)}
-            className="border rounded px-3 py-2 text-sm">
+            className="form-select w-auto">
             <option value="">全部空间库</option>
             {spaces.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
@@ -24,57 +24,77 @@ export default function ChannelAnalysis() {
           {isAdmin && (
             <button onClick={() => refreshMutation.mutate({ spaceId })}
               disabled={refreshMutation.isPending}
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+              className="btn-primary text-xs px-3 py-1.5">
               刷新
             </button>
           )}
         </div>
       </div>
 
-      {isLoading ? <div className="text-gray-400">加载中...</div> : (
+      {isLoading ? <div className="text-gray-400 py-12 text-center">加载中...</div> : (
         <div className="space-y-6">
           {data?.channels?.length > 0 ? (
             <>
-              {/* Overview Chart */}
-              <div className="bg-white rounded-lg border p-4">
-                <h3 className="font-semibold mb-4">渠道号码总量对比</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.channels}>
-                    <XAxis dataKey="channelName" /><YAxis /><Tooltip />
-                    <Bar dataKey="total" fill="#3b82f6" name="号码总量" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="card">
+                <div className="card-header">渠道号码总量对比</div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data.channels}>
+                      <XAxis dataKey="channelName" /><YAxis /><Tooltip />
+                      <Bar dataKey="total" fill="#3b82f6" name="号码总量" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
-              {/* Channel Details */}
               {data.channels.map((ch: any) => (
-                <div key={ch.channelId} className="bg-white rounded-lg border p-4">
-                  <h3 className="font-semibold mb-3">{ch.channelName} <span className="text-sm font-normal text-gray-400">({ch.spaceName})</span></h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 text-sm">
-                    <div className="bg-blue-50 p-3 rounded"><div className="text-blue-600 font-medium">{ch.total.toLocaleString()}</div><div className="text-xs text-gray-500">号码总量</div></div>
-                    <div className="bg-green-50 p-3 rounded"><div className="text-green-600 font-medium">{ch.validRate}%</div><div className="text-xs text-gray-500">有效率</div></div>
-                    <div className="bg-purple-50 p-3 rounded"><div className="text-purple-600 font-medium">{ch.avgSendCount}</div><div className="text-xs text-gray-500">平均发送次数</div></div>
-                    <div className="bg-orange-50 p-3 rounded"><div className="text-orange-600 font-medium">{ch.sendCoverage}%</div><div className="text-xs text-gray-500">发送覆盖率</div></div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="text-xs text-gray-500 mb-1">发送次数分布</div>
-                      {ch.sendDistribution.map((s: any) => (
-                        <div key={s.label} className="text-xs">{s.label}: {s.count}</div>
-                      ))}
-                    </div>
+                <div key={ch.channelId} className="card">
+                  <div className="card-header">
+                    {ch.channelName} <span className="text-xs font-normal text-gray-400 ml-1">({ch.spaceName})</span>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium mb-2">活跃度分布</div>
-                    <div className="flex gap-2 flex-wrap">
-                      {ch.activityDistribution.map((a: any) => (
-                        <span key={a.label} className="text-xs bg-gray-100 px-2 py-1 rounded">{a.label}: {a.count}</span>
-                      ))}
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                      <div className="bg-blue-50 rounded-lg p-3.5">
+                        <div className="text-lg font-semibold text-blue-600">{ch.total.toLocaleString()}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">号码总量</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3.5">
+                        <div className="text-lg font-semibold text-green-600">{ch.validRate}%</div>
+                        <div className="text-xs text-gray-500 mt-0.5">有效率</div>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-3.5">
+                        <div className="text-lg font-semibold text-purple-600">{ch.avgSendCount}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">平均发送次数</div>
+                      </div>
+                      <div className="bg-orange-50 rounded-lg p-3.5">
+                        <div className="text-lg font-semibold text-orange-600">{ch.sendCoverage}%</div>
+                        <div className="text-xs text-gray-500 mt-0.5">发送覆盖率</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-700 mb-2">活跃度分布</div>
+                        <div className="flex gap-2 flex-wrap">
+                          {ch.activityDistribution.map((a: any) => (
+                            <span key={a.label} className="badge-default">{a.label}: {a.count}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-700 mb-2">发送次数分布</div>
+                        <div className="flex gap-2 flex-wrap">
+                          {ch.sendDistribution.map((s: any) => (
+                            <span key={s.label} className="badge-default">{s.label}: {s.count}</span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </>
           ) : (
-            <div className="text-gray-400 text-center py-8">暂无渠道数据</div>
+            <div className="text-gray-400 text-center py-12">暂无渠道数据</div>
           )}
         </div>
       )}

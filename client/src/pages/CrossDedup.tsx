@@ -21,21 +21,21 @@ export default function CrossDedup() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">跨库去重</h2>
+        <h2 className="page-header mb-0">跨库去重</h2>
         <button onClick={() => scanMutation.mutate()} disabled={scanMutation.isPending}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50">
+          className="btn-primary">
           {scanMutation.isPending ? '扫描中...' : '手动扫描'}
         </button>
       </div>
 
       {scanMutation.data && (
-        <div className="bg-green-50 text-green-700 p-3 rounded mb-4 text-sm">
-          扫描完成，发现 {scanMutation.data.duplicateCount} 条跨库重复号码
+        <div className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-100 mb-4 text-sm">
+          扫描完成，发现 <strong>{scanMutation.data.duplicateCount}</strong> 条跨库重复号码
         </div>
       )}
 
-      <div className="bg-white rounded-lg border mb-6">
-        <div className="p-4 border-b"><h3 className="font-semibold">扫描批次</h3></div>
+      <div className="card mb-6">
+        <div className="card-header">扫描批次</div>
         <DataTable
           columns={[
             { key: 'id', title: '批次ID' },
@@ -43,20 +43,20 @@ export default function CrossDedup() {
             { key: 'duplicateCount', title: '重复数量' },
             { key: 'status', title: '状态', render: (r: any) => (
               <span className={
-                r.status === 'completed' ? 'text-blue-600' :
-                r.status === 'confirmed' ? 'text-green-600' :
-                r.status === 'ignored' ? 'text-gray-400' : 'text-yellow-600'
+                r.status === 'completed' ? 'badge-info' :
+                r.status === 'confirmed' ? 'badge-success' :
+                r.status === 'ignored' ? 'badge-default' : 'badge-warning'
               }>{r.status === 'completed' ? '待处理' : r.status === 'confirmed' ? '已确认' : r.status === 'ignored' ? '已忽略' : '扫描中'}</span>
             )},
             { key: 'createdAt', title: '时间', render: (r: any) => new Date(r.createdAt).toLocaleString('zh-CN') },
             { key: 'actions', title: '操作', render: (r: any) => (
-              <div className="flex gap-2">
-                <button onClick={() => setSelectedBatch(r.id)} className="text-blue-600 text-sm hover:underline">查看详情</button>
+              <div className="flex gap-3">
+                <button onClick={() => setSelectedBatch(r.id)} className="text-blue-600 text-sm hover:text-blue-700 font-medium">查看详情</button>
                 {r.status === 'completed' && (<>
                   <button onClick={() => updateStatusMutation.mutate({ batchId: r.id, status: 'confirmed' })}
-                    className="text-green-600 text-sm hover:underline">确认</button>
+                    className="text-green-600 text-sm hover:text-green-700 font-medium">确认</button>
                   <button onClick={() => updateStatusMutation.mutate({ batchId: r.id, status: 'ignored' })}
-                    className="text-gray-500 text-sm hover:underline">忽略</button>
+                    className="text-gray-500 text-sm hover:text-gray-600 font-medium">忽略</button>
                 </>)}
               </div>
             )},
@@ -69,17 +69,17 @@ export default function CrossDedup() {
       </div>
 
       {selectedBatch && (
-        <div className="bg-white rounded-lg border">
-          <div className="p-4 border-b flex justify-between">
-            <h3 className="font-semibold">批次 #{selectedBatch} 详情</h3>
-            <button onClick={() => setSelectedBatch(null)} className="text-gray-500 text-sm">关闭</button>
+        <div className="card">
+          <div className="card-header flex justify-between items-center">
+            <span>批次 #{selectedBatch} 详情</span>
+            <button onClick={() => setSelectedBatch(null)} className="text-gray-400 text-sm hover:text-gray-600">关闭</button>
           </div>
           <DataTable
             columns={[
               { key: 'phone', title: '手机号' },
               { key: 'primarySpaceId', title: '主库', render: (r: any) => getSpaceName(r.primarySpaceId) },
               { key: 'sourceSpaceId', title: '来源库', render: (r: any) => getSpaceName(r.sourceSpaceId) },
-              { key: 'status', title: '状态' },
+              { key: 'status', title: '状态', render: (r: any) => <span className="badge-default">{r.status}</span> },
             ]}
             data={records.data?.items || []}
             total={records.data?.total || 0}

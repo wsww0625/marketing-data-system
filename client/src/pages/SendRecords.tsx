@@ -16,19 +16,21 @@ export default function SendRecords() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-6">发送记录</h2>
-      <div className="bg-white rounded-lg border p-4 mb-4">
-        <div className="flex gap-3">
-          <input type="text" value={phone} onChange={e => { setPhone(e.target.value); setPage(1); }}
-            placeholder="手机号" className="border rounded px-3 py-2 text-sm w-48" />
-          <select value={spaceId} onChange={e => { setSpaceId(Number(e.target.value)); setPage(1); }}
-            className="border rounded px-3 py-2 text-sm">
-            <option value={0}>全部空间库</option>
-            {spaces.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+      <h2 className="page-header">发送记录</h2>
+      <div className="card mb-4">
+        <div className="card-body">
+          <div className="flex gap-3">
+            <input type="text" value={phone} onChange={e => { setPhone(e.target.value); setPage(1); }}
+              placeholder="手机号" className="form-input w-48" />
+            <select value={spaceId} onChange={e => { setSpaceId(Number(e.target.value)); setPage(1); }}
+              className="form-select w-auto">
+              <option value={0}>全部空间库</option>
+              {spaces.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
         </div>
       </div>
-      <div className="bg-white rounded-lg border">
+      <div className="card">
         <DataTable
           columns={[
             { key: 'phone', title: '手机号' },

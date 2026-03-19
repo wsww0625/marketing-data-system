@@ -13,10 +13,10 @@ export default function Duplicates() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">重复库</h2>
+        <h2 className="page-header mb-0">重复库</h2>
         <div className="flex gap-2">
           <select value={spaceId} onChange={e => { setSpaceId(Number(e.target.value)); setPage(1); }}
-            className="border rounded px-3 py-2 text-sm">
+            className="form-select w-auto">
             <option value={0}>全部空间库</option>
             {spaces.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
@@ -24,13 +24,13 @@ export default function Duplicates() {
             const res = await exportMutation.mutateAsync({ spaceId: spaceId || undefined });
             if (res.fileName) window.open(getDownloadUrl(res.fileName));
           }} disabled={exportMutation.isPending}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50">
+            className="btn-primary">
             导出重复库
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border">
+      <div className="card">
         <DataTable
           columns={[
             { key: 'phone', title: '手机号' },
